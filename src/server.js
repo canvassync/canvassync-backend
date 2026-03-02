@@ -13,7 +13,7 @@ app.use(cors({
   origin: function(origin, callback) {
     const allowed = [
       process.env.FRONTEND_URL,
-      'https://canvassync-frontend.vercel.app',
+      'https://canvassync.netlify.app/',
       'http://localhost:5173',
     ].filter(Boolean);
     if (!origin || allowed.includes(origin)) {

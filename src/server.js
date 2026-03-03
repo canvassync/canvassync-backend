@@ -12,12 +12,12 @@ const PORT = process.env.PORT || 3001;
 app.use(cors({
   origin: function(origin, callback) {
     const allowed = [
-  process.env.FRONTEND_URL,
-  'https://canvassync.onrender.com',
-  'https://canvassync-frontend.onrender.com',
-  'https://canvassync-frontend.vercel.app',
-  'http://localhost:5173',
-].filter(Boolean);
+      process.env.FRONTEND_URL,
+      'https://canvassync-frontend.onrender.com',
+      'https://canvassync.onrender.com',
+      'https://canvassync-frontend.vercel.app',
+      'http://localhost:5173',
+    ].filter(Boolean);
     if (!origin || allowed.includes(origin)) {
       callback(null, true);
     } else {

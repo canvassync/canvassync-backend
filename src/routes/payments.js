@@ -84,7 +84,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
           plan,
         },
         locale: 'pt-BR',
-        expires_at: Math.floor(Date.now() / 1000) + 60 * 60 * 72, // 72h para pagar o boleto
+        expires_at: Math.floor(Date.now() / 1000) + 60 * 60 * 23, // 23h (Stripe exige < 24h)
       });
 
       return res.json({ url: session.url, sessionId: session.id });

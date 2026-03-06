@@ -56,6 +56,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
       const session = await stripe.checkout.sessions.create({
         customer: stripeCustomerId,
         mode: 'payment',
+        payment_method_types: ['card', 'boleto'],
         line_items: [{
           price_data: {
             currency: 'brl',

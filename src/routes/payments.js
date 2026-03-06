@@ -56,7 +56,6 @@ router.post('/checkout', requireAuth, async (req, res) => {
       const session = await stripe.checkout.sessions.create({
         customer: stripeCustomerId,
         mode: 'payment',
-        automatic_payment_methods: { enabled: true, allow_redirects: 'never' },
         line_items: [{
           price_data: {
             currency: 'brl',

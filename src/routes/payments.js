@@ -50,42 +50,41 @@ router.post('/checkout', requireAuth, async (req, res) => {
     // Garante que o customer existe (inclusive para usuários Google)
     const stripeCustomerId = await getOrCreateStripeCustomer(req.user.id);
 
-    // ── PIX — pagamento único anual ──────────────────────────────────────────
-    if (paymentMethod === 'pix') {
-      if (plan !== 'pro_annual') {
-        return res.status(400).json({ error: 'PIX está disponível apenas para o plano anual' });
-      }
-
+    // ── Boleto — pagamento único (mensal ou anual) ──────────────────────────
+    if (paymentMethod === 'boleto') {
+      const isBoletoAnnual = plan === 'pro_annual';
       const session = await stripe.checkout.sessions.create({
         customer: stripeCustomerId,
         mode: 'payment',
-        payment_method_types: ['pix'],
+        payment_method_types: ['boleto'],
         line_items: [{
           price_data: {
             currency: 'brl',
             product_data: {
-              name: 'CanvasSync Pro — Anual',
-              description: 'Acesso completo por 12 meses, sem marca d\'água',
+              name: isBoletoAnnual ? 'CanvasSync Pro — Anual' : 'CanvasSync Pro — Mensal',
+              description: isBoletoAnnual
+                ? "Acesso completo por 12 meses, sem marca d'água"
+                : "Acesso completo por 1 mês, sem marca d'água",
             },
-            unit_amount: 39900,   // R$ 399,00 em centavos
+            unit_amount: isBoletoAnnual ? 39900 : 3990,
           },
           quantity: 1,
         }],
         payment_intent_data: {
           metadata: {
             user_id: req.user.id,
-            plan: 'pro_annual',
-            payment_method: 'pix',
+            plan,
+            payment_method: 'boleto',
           },
         },
         success_url: `${process.env.FRONTEND_URL}/sucesso?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url:  `${process.env.FRONTEND_URL}/planos`,
         metadata: {
           user_id: req.user.id,
-          plan: 'pro_annual',
+          plan,
         },
-        // Mínimo aceito pelo Stripe é 30min — usando 60min para ter margem segura
-        expires_at: Math.floor(Date.now() / 1000) + 60 * 60,
+        locale: 'pt-BR',
+        expires_at: Math.floor(Date.now() / 1000) + 60 * 60 * 72, // 72h para pagar o boleto
       });
 
       return res.json({ url: session.url, sessionId: session.id });
@@ -127,7 +126,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
     // Mensagem amigável baseada no tipo de erro do Stripe
     let friendlyMessage = 'Erro ao criar sessão de pagamento.';
     if (err.code === 'payment_method_not_available') {
-      friendlyMessage = 'PIX não está habilitado na sua conta Stripe. Ative em: Dashboard → Settings → Payment methods.';
+      friendlyMessage = 'Forma de pagamento não habilitada na sua conta Stripe. Ative em: Dashboard → Settings → Payment methods.';
     } else if (err.code === 'resource_missing') {
       friendlyMessage = 'Configuração do Stripe incompleta. Verifique os Price IDs no .env do backend.';
     } else if (err.message) {

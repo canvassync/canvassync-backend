@@ -50,45 +50,6 @@ router.post('/checkout', requireAuth, async (req, res) => {
     // Garante que o customer existe (inclusive para usuários Google)
     const stripeCustomerId = await getOrCreateStripeCustomer(req.user.id);
 
-    // ── Boleto — pagamento único (mensal ou anual) ──────────────────────────
-    if (paymentMethod === 'boleto') {
-      const isBoletoAnnual = plan === 'pro_annual';
-      const session = await stripe.checkout.sessions.create({
-        customer: stripeCustomerId,
-        mode: 'payment',
-        payment_method_types: ['card', 'boleto'],
-        line_items: [{
-          price_data: {
-            currency: 'brl',
-            product_data: {
-              name: isBoletoAnnual ? 'CanvasSync Pro — Anual' : 'CanvasSync Pro — Mensal',
-              description: isBoletoAnnual
-                ? "Acesso completo por 12 meses, sem marca d'água"
-                : "Acesso completo por 1 mês, sem marca d'água",
-            },
-            unit_amount: isBoletoAnnual ? 39900 : 3990,
-          },
-          quantity: 1,
-        }],
-        payment_intent_data: {
-          metadata: {
-            user_id: req.user.id,
-            plan,
-            payment_method: 'boleto',
-          },
-        },
-        success_url: `${process.env.FRONTEND_URL}/sucesso?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url:  `${process.env.FRONTEND_URL}/planos`,
-        metadata: {
-          user_id: req.user.id,
-          plan,
-        },
-        locale: 'pt-BR',
-        expires_at: Math.floor(Date.now() / 1000) + 60 * 60 * 23, // 23h (Stripe exige < 24h)
-      });
-
-      return res.json({ url: session.url, sessionId: session.id });
-    }
 
     // ── Cartão — assinatura recorrente ───────────────────────────────────────
     const session = await stripe.checkout.sessions.create({
